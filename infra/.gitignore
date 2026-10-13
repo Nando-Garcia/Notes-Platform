@@ -1,0 +1,13 @@
+# Ignore localstack files
+/localstack
+
+# documentation
+/docs
+
+# Ignore Terraform state files
+infra.tf
+infra.tfstate
+infra.tfstate.backup
+
+# Local environment secrets (keep .env.example versioned)
+.env

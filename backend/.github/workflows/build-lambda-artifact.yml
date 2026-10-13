@@ -1,0 +1,43 @@
+name: Build Lambda Artifact
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - src/lambda/**
+      - tsconfig.lambda.json
+      - package.json
+      - package-lock.json
+
+jobs:
+  build-lambda:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install zip
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Build Lambda zip
+        run: npm run build:lambda
+
+      - name: Upload Lambda artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sqs-consumer-zip
+          path: lambda-dist/sqs-consumer.zip
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,11 @@
+# Terraform state y cache local
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+terraform.tfvars
+*.auto.tfvars
+
+# Lambda ZIP (se genera desde el repo del backend con npm run build:lambda)
+lambda-dist/

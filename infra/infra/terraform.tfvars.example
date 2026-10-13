@@ -1,0 +1,14 @@
+# Local Terraform variables (example)
+# Copy to terraform.tfvars and set your local values.
+
+# DB settings used by resources/secrets in this infra
+# Keep real values in infra/terraform.tfvars (gitignored).
+db_host     = "localhost"
+db_port     = 5432
+db_name     = "notesdb"
+db_username = "admin"
+db_password = "change_me_local_only"
+
+# Optional overrides
+# lambda_architecture = "arm64"
+# lambda_zip_path     = "../../Portafolio_test/backend/lambda-dist/sqs-consumer.zip"

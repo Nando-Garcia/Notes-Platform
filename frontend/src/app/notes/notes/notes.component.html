@@ -1,0 +1,79 @@
+<div class="notes-container">
+  <header class="notes-header">
+    <h1>Mis Notas</h1>
+    <div class="header-actions">
+      <button class="btn-add" (click)="toggleForm()">
+        {{ showForm() ? '✕ Cancelar' : '+ Nueva Nota' }}
+      </button>
+      <button class="btn-logout" (click)="logout()">Cerrar Sesión</button>
+    </div>
+  </header>
+
+  @if (showForm()) {
+    <div class="note-form" @fadeInOut>
+      <h3>Crear nueva nota</h3>
+      <div class="form-group">
+        <input
+          type="text"
+          [(ngModel)]="newTitle"
+          name="title"
+          placeholder="Título de la nota"
+        />
+      </div>
+      <div class="form-group">
+        <textarea
+          [(ngModel)]="newContent"
+          name="content"
+          placeholder="Contenido de la nota"
+          rows="4"
+        ></textarea>
+      </div>
+      @if (errorMessage) {
+        <div class="error-message">{{ errorMessage }}</div>
+      }
+      <div class="form-actions">
+        <button class="btn-save" (click)="createNote()">Guardar Nota</button>
+        <label class="btn-attach">
+          📁 {{ selectedFile ? selectedFile.name : 'Adjuntar archivo (opcional)' }}
+          <input type="file" hidden (change)="onFormFileSelected($event)" />
+        </label>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading" @fadeInOut>Cargando notas...</div>
+  } @else if (notes.length === 0) {
+    <div class="empty-state" @fadeInOut>
+      <p>No tienes notas aún. ¡Crea tu primera nota!</p>
+    </div>
+  } @else if (!showForm()){
+    <div class="notes-grid">
+      @for (note of notes; track note.id) {
+        <div class="note-card">
+          <div class="note-header">
+            <h3>{{ note.title }}</h3>
+            <button class="btn-delete-icon" (click)="deleteNote(note.id!)" title="Eliminar nota">
+              🗑️
+            </button>
+          </div>
+          <p>{{ note.content }}</p>
+
+          <div class="note-attachment">
+            @if (note.fileUrl) {
+              <a [href]="note.fileUrl" target="_blank" class="btn-file-link">Ver archivo adjunto</a>
+            }
+            <label class="btn-attach">
+              📁 {{ note.fileUrl ? 'Reemplazar archivo' : 'Adjuntar archivo' }}
+              <input
+                type="file"
+                hidden
+                (change)="onFileSelected(note.id!, $event)"
+              />
+            </label>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

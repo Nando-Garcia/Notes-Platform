@@ -1,0 +1,58 @@
+# Global monorepo ignores
+node_modules/
+**/node_modules/
+
+# Build outputs
+/dist
+/build
+**/dist
+**/build
+coverage/
+**/coverage/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment files
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Terraform
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.backup
+**/*.tfplan
+**/*.auto.tfvars
+**/*.tfvars
+!**/*.tfvars.example
+
+# Docker / OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary files
+.tmp
+.temp
+*.tmp
+*.temp
+
+# Lambda artifacts
+**/lambda-dist/
+**/*.zip
+
+# Optional editor files
+*.swp
+*.swo
