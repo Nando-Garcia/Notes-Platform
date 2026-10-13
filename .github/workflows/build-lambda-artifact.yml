@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
     paths:
-      - src/lambda/**
-      - tsconfig.lambda.json
-      - package.json
-      - package-lock.json
+      - backend/src/lambda/**
+      - backend/tsconfig.lambda.json
+      - backend/package.json
+      - backend/package-lock.json
 
 jobs:
   build-lambda:
@@ -24,20 +24,23 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
+        working-directory: backend
         run: npm ci
 
       - name: Install zip
         run: sudo apt-get update && sudo apt-get install -y zip
 
       - name: Build Lambda zip
+        working-directory: backend
         run: npm run build:lambda
 
       - name: Upload Lambda artifact
         uses: actions/upload-artifact@v4
         with:
           name: sqs-consumer-zip
-          path: lambda-dist/sqs-consumer.zip
+          path: backend/lambda-dist/sqs-consumer.zip
           if-no-files-found: error
           retention-days: 7
