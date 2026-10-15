@@ -8,9 +8,6 @@
 /.angular/cache
 .angular/
 
-# documentation
-/docs
-
 # Node
 /node_modules
 npm-debug.log*
