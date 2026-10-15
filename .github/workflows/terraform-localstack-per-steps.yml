@@ -38,7 +38,7 @@ on:
           - "8"
           - "9"
 jobs:
-  build-infra:
+  build-infra-notes-platform:
     runs-on: ubuntu-latest
     env:
       TF_VAR_db_host: localhost
