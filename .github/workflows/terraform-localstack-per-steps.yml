@@ -23,9 +23,9 @@ on:
         default: main
         type: string
       debug_until:
-        description: "Run steps until this stage (1-9)"
+        description: "Run steps until this stage (1-8)"
         required: true
-        default: "9"
+        default: "8"
         type: choice
         options:
           - "1"
@@ -36,7 +36,6 @@ on:
           - "6"
           - "7"
           - "8"
-          - "9"
 jobs:
   build-infra-notes-platform:
     runs-on: ubuntu-latest

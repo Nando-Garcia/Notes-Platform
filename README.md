@@ -255,6 +255,69 @@ This monorepo includes GitHub Actions workflows (in `.github/workflows/`) that a
 - **Infrastructure validation** — Terraform plan/apply, LocalStack health checks
 - **Lambda packaging** — Automated ZIP artifact generation for serverless processing
 
+### Terraform LocalStack Per-Steps Workflow
+
+**File:** `.github/workflows/terraform-localstack-per-steps.yml`
+
+A granular infrastructure deployment workflow with per-step debugging control. Manually triggered (`workflow_dispatch`) to deploy infrastructure to LocalStack with full control over each stage.
+
+**Inputs:**
+- `apply` — Run `terraform apply` (boolean, default: false)
+- `lambda_architecture` — Target architecture: `auto`, `arm64`, or `x86_64` (default: auto)
+- `backend_ref` — Backend branch/tag/SHA for Lambda build (default: main)
+- `debug_until` — Stop execution at specified step (1-8, default: 8)
+
+**Steps:**
+
+| Step | Name | Purpose |
+|------|------|----------|
+| 1 | Checkout infra repository | Clone monorepo code for access to Terraform files |
+| 2 | Validate required secrets | Verify DB_NAME, DB_USER, DB_PASSWORD secrets exist in repository settings |
+| 3 | Download Lambda artifact | Fetch sqs-consumer.zip from `build-lambda-artifact.yml` workflow (cross-workflow download) |
+| 4 | Check zip exists | Confirm Lambda artifact file exists; fail fast if missing |
+| 5 | Setup Terraform | Install Terraform CLI on runner |
+| 6 | Wait for LocalStack readiness | Poll LocalStack health endpoint until services are available (S3, SQS, Lambda, IAM, etc.) |
+| 7 | Resolve lambda architecture | Auto-detect machine architecture or use explicit input value |
+| 8 | Terraform init/plan/apply | Initialize Terraform state, generate execution plan, and apply infrastructure if `apply=true` |
+
+**Example Usage:**
+```bash
+# Debug: Run through step 4 only (verify artifact download)
+Debug Until: 4
+
+# Full deployment: Run all steps and apply infrastructure
+Apply: true
+Debug Until: 8
+Lambda Architecture: arm64
+```
+
+**Services Started:**
+- **LocalStack** — AWS emulation (S3, SQS, Lambda, IAM, CloudWatch, Secrets Manager)
+- **PostgreSQL 16** — Database for application data
+
+### Build Lambda Artifact Workflow
+
+**File:** `.github/workflows/build-lambda-artifact.yml`
+
+Automatically packages the Lambda consumer function into a deployable ZIP artifact.
+
+**Triggers:**
+- Manual trigger (`workflow_dispatch`)
+- Pull requests to `main` branch (paths: `backend/src/lambda/**`, `backend/tsconfig.lambda.json`, `backend/package.json`)
+
+**Output:**
+- **Artifact:** `sqs-consumer-zip` (7-day retention)
+- **Location:** Downloadable from GitHub Actions → Artifacts
+
+**Dependency Chain:**
+```
+build-lambda-artifact.yml (builds ZIP)
+        ↓
+terraform-localstack-per-steps.yml (downloads ZIP)
+        ↓
+terraform apply (provisions Lambda with artifact)
+```
+
 ---
 
 ## Security & Secrets
