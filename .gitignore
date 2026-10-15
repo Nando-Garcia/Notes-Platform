@@ -2,6 +2,9 @@
 node_modules/
 **/node_modules/
 
+# documentation
+/.docs
+
 # Build outputs
 /dist
 /build
