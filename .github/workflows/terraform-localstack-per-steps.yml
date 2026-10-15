@@ -1,4 +1,4 @@
-name: Terraform LocalStack-Services Debug
+name: Terraform LocalStack-Services Per Steps
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ on:
       backend_ref:
         description: "Backend branch/tag/SHA to build lambda"
         required: true
-        default: master
+        default: main
         type: string
       debug_until:
         description: "Run steps until this stage (1-9)"
@@ -37,16 +37,10 @@ on:
           - "7"
           - "8"
           - "9"
-  # push:
-  #   branches:
-  #     - config/github-actions-infra
-
 jobs:
   build-infra:
     runs-on: ubuntu-latest
     env:
-      # DEBUG_UNTIL: "9" # Se modifica este valor para ejecucion por pasos, solo para rama: config/github-actions-infra 
-      # APPLY: "true"
       TF_VAR_db_host: localhost
       TF_VAR_db_port: "5432"
       TF_VAR_db_name: ${{ secrets.DB_NAME }}
@@ -55,12 +49,9 @@ jobs:
 
     services:
       localstack:
-        # Error 1 - peticion de token de autenticacion, error de compatibilidad con runner de actions
-        # image: localstack/localstack:latest
         image: localstack/localstack:3.0.0
         ports:
           - 4566:4566
-        # Error 2 - Lambda no tiene acceso a docker engine de localstack, se agrega volumen para compartir docker.sock
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock
         env:
@@ -82,13 +73,11 @@ jobs:
 
     steps:
       - name: Checkout infra repository
-        # if: ${{ env.DEBUG_UNTIL >= '1' }}
         if: ${{ github.event.inputs.debug_until >= '1' }}
         uses: actions/checkout@v4
 
       - name: Validate required secrets
         if: ${{ github.event.inputs.debug_until >= '2' }}
-        # if: ${{ env.DEBUG_UNTIL >= '2' }}
         env:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
@@ -98,43 +87,25 @@ jobs:
           [ -n "$DB_USER" ] || { echo "Missing required secret: DB_USER"; exit 1; }
           [ -n "$DB_PASSWORD" ] || { echo "Missing required secret: DB_PASSWORD"; exit 1; }
 
-      - name: Validate backend repository variable
+      - name: Download Lambda artifact built by build-lambda-artifact.yml
         if: ${{ github.event.inputs.debug_until >= '3' }}
-        # if: ${{ env.DEBUG_UNTIL >= '3' }}
-        run: |
-          if [ -z "${{ vars.BACKEND_REPOSITORY }}" ]; then
-            echo "Missing repository variable BACKEND_REPOSITORY (format: owner/repo)."
-            exit 1
-          fi
-
-      - name: Download Lambda artifact from backend workflow
-        if: ${{ github.event.inputs.debug_until >= '4' }}
-        # if: ${{ env.DEBUG_UNTIL >= '4' }}
-        uses: dawidd6/action-download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          workflow: build-lambda-artifact.yml
-          repo: ${{ vars.BACKEND_REPOSITORY }}
-          branch: ${{ github.event.inputs.backend_ref || 'master'}}
-          # branch: ${{ github.event.inputs.backend_ref }}
           name: sqs-consumer-zip
           path: backend-artifacts
-          github_token: ${{ secrets.BACKEND_ARTIFACT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Check zip exists
-        if: ${{ github.event.inputs.debug_until >= '5' }}
-        # if: ${{ env.DEBUG_UNTIL >= '5' }}
+        if: ${{ github.event.inputs.debug_until >= '4' }}
         run: |
           ls -la backend-artifacts
-          test -f backend-artifacts/sqs-consumer.zip
+          test -f backend-artifacts/sqs-consumer.zip || { echo "Artifact not found! Did build-lambda-artifact.yml run first?"; exit 1; }
 
       - name: Setup Terraform
-        if: ${{ github.event.inputs.debug_until >= '6' }}
-        # if: ${{ env.DEBUG_UNTIL >= '6' }}
+        if: ${{ github.event.inputs.debug_until >= '5' }}
         uses: hashicorp/setup-terraform@v3
 
       - name: Wait for LocalStack readiness
-        if: ${{ github.event.inputs.debug_until >= '7' }}
-        # if: ${{ env.DEBUG_UNTIL >= '7' }}
+        if: ${{ github.event.inputs.debug_until >= '6' }}
         run: |
           for i in {1..45}; do
             HEALTH_JSON="$(curl -sS --max-time 3 http://localhost:4566/_localstack/health || true)"
@@ -152,8 +123,7 @@ jobs:
           exit 1
 
       - name: Resolve lambda architecture
-        if: ${{ github.event.inputs.debug_until >= '8' }}
-        # if: ${{ env.DEBUG_UNTIL >= '8' }}
+        if: ${{ github.event.inputs.debug_until >= '7' }}
         id: arch
         run: |
           # INPUT_ARCH="${{ github.event.inputs.lambda_architecture }}"
@@ -171,24 +141,21 @@ jobs:
           fi
 
       - name: Terraform init
-        if: ${{ github.event.inputs.debug_until >= '9' }}
-        # if: ${{ env.DEBUG_UNTIL >= '9' }}
-        working-directory: infra
+        if: ${{ github.event.inputs.debug_until >= '8' }}
+        working-directory: infra/infra
         run: terraform init
 
       - name: Terraform plan
-        if: ${{ github.event.inputs.debug_until >= '9' }}
-        # if: ${{ env.DEBUG_UNTIL >= '9' }}
-        working-directory: infra
+        if: ${{ github.event.inputs.debug_until >= '8' }}
+        working-directory: infra/infra
         run: |
           terraform plan \
             -var="lambda_architecture=${{ steps.arch.outputs.value }}" \
             -var="lambda_zip_path=${{ github.workspace }}/backend-artifacts/sqs-consumer.zip"
 
       - name: Terraform apply
-        if: ${{ github.event.inputs.debug_until >= '9' && github.event.inputs.apply == 'true' }}
-        # if: ${{ env.DEBUG_UNTIL >= '9' && env.APPLY == 'true' }}
-        working-directory: infra
+        if: ${{ github.event.inputs.debug_until >= '8' && github.event.inputs.apply == 'true' }}
+        working-directory: infra/infra
         run: |
           terraform apply -auto-approve \
             -var="lambda_architecture=${{ steps.arch.outputs.value }}" \

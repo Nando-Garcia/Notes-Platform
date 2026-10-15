@@ -2,7 +2,7 @@
 /localstack
 
 # documentation
-# /docs
+/docs
 
 # Ignore Terraform state files
 infra.tf
